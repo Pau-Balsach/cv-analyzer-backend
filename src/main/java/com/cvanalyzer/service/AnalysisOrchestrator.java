@@ -20,12 +20,12 @@ public class AnalysisOrchestrator {
     private final AnalysisRepository analysisRepository;
 
     @Async("taskExecutor")
-    public void processAnalysis(UUID analysisId, String cvText) {
+    public void processAnalysis(UUID analysisId, String cvText, String language) {
         log.info("Iniciando análisis asíncrono para analysisId: {}", analysisId);
 
         try {
             // 1. Construir prompt
-            String prompt = promptBuilderService.buildAnalysisPrompt(cvText);
+            String prompt = promptBuilderService.buildAnalysisPrompt(cvText, language);  // ← pasar language
 
             // 2. Llamar a la IA
             CvAnalysisResult result = aiAnalysisService.analyzeCV(prompt);

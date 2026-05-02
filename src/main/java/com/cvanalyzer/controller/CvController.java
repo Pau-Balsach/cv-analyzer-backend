@@ -24,7 +24,8 @@ public class CvController {
     @PostMapping("/upload")
     public ResponseEntity<?> uploadCv(
             @RequestParam("file") MultipartFile file,
-            @RequestHeader("X-User-Id") String userId
+            @RequestHeader("X-User-Id") String userId,
+            @RequestHeader(value = "X-Language", defaultValue = "en") String language
     ) {
         log.info("Recibida petición de upload de CV para usuario: {}", userId);
 
@@ -34,7 +35,7 @@ public class CvController {
                     .body("Has superado el límite de 5 análisis por hora.");
         }
 
-        CvUploadResponse response = cvService.uploadAndProcess(file, UUID.fromString(userId));
+        CvUploadResponse response = cvService.uploadAndProcess(file, UUID.fromString(userId), language);
         return ResponseEntity.accepted().body(response);
     }
 

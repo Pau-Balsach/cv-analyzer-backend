@@ -2,6 +2,8 @@ package com.cvanalyzer.service;
 
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
 public class PromptBuilderService {
 
@@ -30,76 +32,86 @@ public class PromptBuilderService {
                 .trim();
     }
 
-    public String buildAnalysisPrompt(String cvText) {
-        String sanitized = sanitize(cvText);
+    private static final Map<String, String> LANGUAGE_NAMES = Map.of(
+            "es", "Spanish",
+            "en", "English",
+            "fr", "French",
+            "de", "German",
+            "pt", "Portuguese"
+    );
 
+    public String buildAnalysisPrompt(String cvText, String language) {  // ← añadir language
+        String sanitized = sanitize(cvText);
         String truncatedText = sanitized.length() > MAX_CV_CHARS
                 ? sanitized.substring(0, MAX_CV_CHARS)
                 : sanitized;
 
-        return """
-                [INST]
-                You are a professional CV/Resume analyst. Analyze the following CV and respond ONLY with a valid JSON object.
-                No explanations, no markdown formatting, no text before or after the JSON. Just the raw JSON.
-
-                CV TEXT:
-                ---
-                %s
-                ---
-
-                You MUST respond with this exact JSON structure and nothing else:
-                {
-                  "score": <integer between 0 and 100>,
-                  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
-                  "weaknesses": ["<weakness 1>", "<weakness 2>"],
-                  "improvements": ["<specific actionable improvement 1>", "<specific actionable improvement 2>"],
-                  "missing_keywords": ["<keyword 1>", "<keyword 2>", "<keyword 3>"],
-                  "sections": {
-                    "experience": {"score": <0-100>, "feedback": "<specific feedback>"},
-                    "education": {"score": <0-100>, "feedback": "<specific feedback>"},
-                    "skills": {"score": <0-100>, "feedback": "<specific feedback>"},
-                    "format": {"score": <0-100>, "feedback": "<specific feedback>"}
-                  }
-                }
-                [/INST]
-                """.formatted(truncatedText);
-    }
-
-    public String buildJobMatchPrompt(String cvText, String jobDescription) {
-        String sanitizedCv = sanitize(cvText);
-        String sanitizedJob = sanitize(jobDescription);
-
-        String truncatedCv = sanitizedCv.length() > 2000
-                ? sanitizedCv.substring(0, 2000)
-                : sanitizedCv;
-
-        String truncatedJob = sanitizedJob.length() > 1000
-                ? sanitizedJob.substring(0, 1000)
-                : sanitizedJob;
+        String langName = LANGUAGE_NAMES.getOrDefault(language, "English");  // ← nuevo
 
         return """
             [INST]
-            You are a recruiting expert. Compare this CV against the job description and respond ONLY with a valid JSON object.
+            You are a professional CV/Resume analyst. Analyze the following CV and respond ONLY with a valid JSON object.
             No explanations, no markdown formatting, no text before or after the JSON. Just the raw JSON.
+
+            IMPORTANT: All string values in the JSON must be written in %s.
 
             CV TEXT:
             ---
             %s
             ---
 
-            JOB DESCRIPTION:
-            ---
-            %s
-            ---
-
             You MUST respond with this exact JSON structure and nothing else:
             {
-              "matchScore": <integer between 0 and 100>,
-              "matchedSkills": ["<skill 1>", "<skill 2>"],
-              "missingSkills": ["<skill 1>", "<skill 2>"],
-              "recommendations": ["<actionable tip 1>", "<actionable tip 2>"]
+              "score": <integer between 0 and 100>,
+              "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
+              "weaknesses": ["<weakness 1>", "<weakness 2>"],
+              "improvements": ["<specific actionable improvement 1>", "<specific actionable improvement 2>"],
+              "missing_keywords": ["<keyword 1>", "<keyword 2>", "<keyword 3>"],
+              "sections": {
+                "experience": {"score": <0-100>, "feedback": "<specific feedback>"},
+                "education": {"score": <0-100>, "feedback": "<specific feedback>"},
+                "skills": {"score": <0-100>, "feedback": "<specific feedback>"},
+                "format": {"score": <0-100>, "feedback": "<specific feedback>"}
+              }
             }
             [/INST]
-            """.formatted(truncatedCv, truncatedJob);
+            """.formatted(langName, truncatedText);  // ← langName primero
+    }
+
+    public String buildJobMatchPrompt(String cvText, String jobDescription, String language) {  // ← añadir language
+        String sanitizedCv = sanitize(cvText);
+        String sanitizedJob = sanitize(jobDescription);
+
+        String truncatedCv = sanitizedCv.length() > 2000 ? sanitizedCv.substring(0, 2000) : sanitizedCv;
+        String truncatedJob = sanitizedJob.length() > 1000 ? sanitizedJob.substring(0, 1000) : sanitizedJob;
+
+        String langName = LANGUAGE_NAMES.getOrDefault(language, "English");  // ← nuevo
+
+        return """
+        [INST]
+        You are a recruiting expert. Compare this CV against the job description and respond ONLY with a valid JSON object.
+        No explanations, no markdown formatting, no text before or after the JSON. Just the raw JSON.
+
+        IMPORTANT: All string values in the JSON must be written in %s.
+
+        CV TEXT:
+        ---
+        %s
+        ---
+
+        JOB DESCRIPTION:
+        ---
+        %s
+        ---
+
+        You MUST respond with this exact JSON structure and nothing else:
+        {
+          "matchScore": <integer between 0 and 100>,
+          "matchedSkills": ["<skill 1>", "<skill 2>"],
+          "missingSkills": ["<skill 1>", "<skill 2>"],
+          "recommendations": ["<actionable tip 1>", "<actionable tip 2>"]
+        }
+        [/INST]
+        """.formatted(langName, truncatedCv, truncatedJob);  // ← langName primero
     }
 }

@@ -23,7 +23,7 @@ public class CvService {
     private final AnalysisRepository analysisRepository;
     private final AnalysisOrchestrator analysisOrchestrator;
 
-    public CvUploadResponse uploadAndProcess(MultipartFile file, UUID userId) {
+    public CvUploadResponse uploadAndProcess(MultipartFile file, UUID userId, String language) {
 
         // 1. Validar archivo
         cvParsingService.validateFile(file);
@@ -61,7 +61,7 @@ public class CvService {
         log.info("Análisis creado con id: {}", savedAnalysis.getId());
 
         // 7. Lanzar análisis asíncrono
-        analysisOrchestrator.processAnalysis(savedAnalysis.getId(), extractedText);
+        analysisOrchestrator.processAnalysis(savedAnalysis.getId(), extractedText, language);  // ← añadir language
 
         return CvUploadResponse.builder()
                 .cvId(savedCv.getId())

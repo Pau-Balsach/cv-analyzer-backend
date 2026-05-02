@@ -40,7 +40,7 @@ public class JobMatchService {
     @Value("${groq.model-name}")
     private String modelName;
 
-    public JobMatchResponse match(UUID analysisId, JobMatchRequest request) {
+    public JobMatchResponse match(UUID analysisId, JobMatchRequest request, String language) {
         // 1. Obtener el análisis y el CV
         Analysis analysis = analysisRepository.findById(analysisId)
                 .orElseThrow(() -> new RuntimeException("Análisis no encontrado: " + analysisId));
@@ -51,7 +51,8 @@ public class JobMatchService {
         // 2. Construir prompt
         String prompt = promptBuilderService.buildJobMatchPrompt(
                 cv.getTextContent(),
-                request.getJobDescription()
+                request.getJobDescription(),
+                language
         );
 
         // 3. Llamar a Groq

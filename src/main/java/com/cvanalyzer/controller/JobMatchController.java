@@ -22,10 +22,11 @@ public class JobMatchController {
     @PostMapping("/{analysisId}/job-match")
     public ResponseEntity<JobMatchResponse> jobMatch(
             @PathVariable UUID analysisId,
-            @Valid @RequestBody JobMatchRequest request
+            @Valid @RequestBody JobMatchRequest request,
+            @RequestHeader(value = "X-Language", defaultValue = "en") String language
     ) {
         log.info("Job match solicitado para analysisId: {}", analysisId);
-        JobMatchResponse response = jobMatchService.match(analysisId, request);
+        JobMatchResponse response = jobMatchService.match(analysisId, request, language);
         return ResponseEntity.ok(response);
     }
 }
