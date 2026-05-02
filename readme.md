@@ -1,62 +1,62 @@
 # CV Analyzer — Backend
 
-REST API built with Spring Boot that analyzes CVs using AI and returns structured, actionable feedback.
+API REST construida con Spring Boot que analiza CVs usando IA y devuelve feedback estructurado y accionable.
 
-## What it does
+## ¿Qué hace?
 
-Users upload a PDF CV and the system:
-1. Extracts the text using Apache PDFBox
-2. Stores the file in Supabase Storage
-3. Builds an AI prompt and calls the Groq API (Llama 3.3)
-4. Returns a structured analysis with score, strengths, weaknesses, improvements, and missing ATS keywords
+El usuario sube un PDF con su CV y el sistema:
+1. Extrae el texto del PDF con Apache PDFBox
+2. Guarda el archivo en Supabase Storage
+3. Construye un prompt y llama a la API de Groq (Llama 3.3)
+4. Devuelve un análisis estructurado con puntuación, puntos fuertes, débiles, mejoras y keywords ATS que faltan
 
-## Tech Stack
+## Stack tecnológico
 
-| Layer | Technology |
+| Capa | Tecnología |
 |---|---|
-| Language | Java 17 |
+| Lenguaje | Java 17 |
 | Framework | Spring Boot 3.4 |
-| Database | PostgreSQL via Supabase |
-| File Storage | Supabase Storage |
-| AI | Groq API — Llama 3.3 70B |
-| PDF Parsing | Apache PDFBox 3.0 |
-| HTTP Client | Spring WebFlux WebClient |
-| Auth | JWT (Supabase tokens) |
+| Base de datos | PostgreSQL via Supabase |
+| Almacenamiento | Supabase Storage |
+| IA | Groq API — Llama 3.3 70B |
+| Parsing PDF | Apache PDFBox 3.0 |
+| Cliente HTTP | Spring WebFlux WebClient |
+| Autenticación | JWT (tokens de Supabase) |
 | Deploy | Render (free tier) |
 
-## Architecture
+## Arquitectura
 
 ```
 POST /api/cv/upload
-  → Validate PDF (type, size ≤ 5MB)
-  → Upload to Supabase Storage
-  → Extract text with PDFBox
-  → Save CV record in DB
-  → Create analysis with status PROCESSING
-  → Launch @Async thread
-  → Return 202 with analysisId
+  → Valida el PDF (tipo, tamaño ≤ 5MB)
+  → Sube el archivo a Supabase Storage
+  → Extrae texto con PDFBox
+  → Guarda registro CV en BD
+  → Crea análisis con status PROCESSING
+  → Lanza hilo @Async
+  → Devuelve 202 con analysisId
 
-@Async thread:
-  → Build prompt with PromptBuilderService
-  → Call Groq API
-  → Parse JSON response defensively
-  → Save result in DB with status COMPLETED
+Hilo @Async:
+  → Construye prompt con PromptBuilderService
+  → Llama a la API de Groq
+  → Parsea el JSON de respuesta de forma defensiva
+  → Guarda resultado en BD con status COMPLETED
 
 GET /api/analysis/{analysisId}
-  → Return full analysis result
+  → Devuelve el análisis completo
 ```
 
-## API Endpoints
+## Endpoints
 
-### Upload CV
+### Subir CV
 ```
 POST /api/cv/upload
 Headers:
   X-User-Id: <user-uuid>
 Body: multipart/form-data
-  file: <pdf-file>
+  file: <archivo-pdf>
 
-Response 202:
+Respuesta 202:
 {
   "cvId": "uuid",
   "analysisId": "uuid",
@@ -65,19 +65,19 @@ Response 202:
 }
 ```
 
-### Get Analysis
+### Obtener análisis
 ```
 GET /api/analysis/{analysisId}
 
-Response 200:
+Respuesta 200:
 {
   "analysisId": "uuid",
   "cvId": "uuid",
   "status": "COMPLETED",
   "score": 80,
-  "strengths": ["Relevant technical experience"],
-  "weaknesses": ["Limited work experience"],
-  "improvements": ["Quantify achievements"],
+  "strengths": ["Experiencia técnica relevante"],
+  "weaknesses": ["Poca experiencia laboral"],
+  "improvements": ["Cuantifica tus logros"],
   "missingKeywords": ["Docker", "CI/CD"],
   "sections": {
     "experience": { "score": 70, "feedback": "..." },
@@ -88,59 +88,59 @@ Response 200:
 }
 ```
 
-### Health Check
+### Health check
 ```
 GET /api/cv/health → 200 OK
 ```
 
-## Project Structure
+## Estructura del proyecto
 
 ```
 src/main/java/com/cvanalyzer/
 ├── config/
-│   ├── AsyncConfig.java          # ThreadPoolTaskExecutor for @Async
+│   ├── AsyncConfig.java          # ThreadPoolTaskExecutor para @Async
 │   ├── SecurityConfig.java       # CORS + Spring Security
-│   └── WebClientConfig.java      # WebClient bean
+│   └── WebClientConfig.java      # Bean WebClient
 ├── controller/
 │   ├── CvController.java         # /api/cv/**
 │   └── AnalysisController.java   # /api/analysis/**
 ├── service/
-│   ├── CvService.java            # Upload orchestration
-│   ├── CvParsingService.java     # PDFBox text extraction
-│   ├── StorageService.java       # Supabase Storage uploads
-│   ├── AiAnalysisService.java    # Groq API calls
-│   ├── PromptBuilderService.java # AI prompt construction
-│   └── AnalysisOrchestrator.java # Async analysis pipeline
+│   ├── CvService.java            # Orquestación del upload
+│   ├── CvParsingService.java     # Extracción de texto con PDFBox
+│   ├── StorageService.java       # Subida a Supabase Storage
+│   ├── AiAnalysisService.java    # Llamadas a la API de Groq
+│   ├── PromptBuilderService.java # Construcción del prompt
+│   └── AnalysisOrchestrator.java # Pipeline de análisis asíncrono
 ├── repository/
 │   ├── CvRepository.java
 │   └── AnalysisRepository.java
 └── model/
-    ├── entity/                   # JPA entities (Cv, Analysis)
-    ├── dto/                      # Request/Response DTOs
-    └── ai/                       # CvAnalysisResult POJO
+    ├── entity/                   # Entidades JPA (Cv, Analysis)
+    ├── dto/                      # DTOs de request/response
+    └── ai/                       # POJO CvAnalysisResult
 ```
 
-## Local Setup
+## Configuración local
 
-### Prerequisites
+### Requisitos previos
 - Java 17+
 - Maven 3.8+
-- Supabase account (free)
-- Groq account (free) — https://console.groq.com
+- Cuenta en Supabase (gratuita)
+- Cuenta en Groq (gratuita) — https://console.groq.com
 
-### 1. Clone the repo
+### 1. Clonar el repositorio
 ```bash
 git clone https://github.com/Pau-Balsach/cv-analyzer-backend.git
 cd cv-analyzer-backend
 ```
 
-### 2. Create `src/main/resources/application-dev.yml`
+### 2. Crear `src/main/resources/application-dev.yml`
 ```yaml
 spring:
   datasource:
-    url: jdbc:postgresql://<your-supabase-db-url>:5432/postgres
-    username: <your-db-user>
-    password: <your-db-password>
+    url: jdbc:postgresql://<tu-supabase-db-url>:5432/postgres
+    username: <tu-usuario-db>
+    password: <tu-password-db>
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -148,57 +148,57 @@ spring:
     show-sql: true
 
 supabase:
-  url: https://<your-project>.supabase.co
-  key: <your-service-role-key>
+  url: https://<tu-proyecto>.supabase.co
+  key: <tu-service-role-key>
 
 jwt:
-  secret: <your-jwt-secret>
+  secret: <tu-jwt-secret>
   expiration: 86400000
 
 allowed-origins: http://localhost:3000
 
 groq:
-  api-key: <your-groq-api-key>
+  api-key: <tu-groq-api-key>
   model-url: https://api.groq.com/openai/v1/chat/completions
   model-name: llama-3.3-70b-versatile
 ```
 
-### 3. Run
+### 3. Arrancar
 ```bash
 mvn spring-boot:run
 ```
 
-Server starts on `http://localhost:8080`
+El servidor arranca en `http://localhost:8080`
 
-## Environment Variables (Production)
+## Variables de entorno (producción)
 
-| Variable | Description |
+| Variable | Descripción |
 |---|---|
 | `SPRING_PROFILES_ACTIVE` | `prod` |
-| `SUPABASE_DB_URL` | PostgreSQL JDBC URL |
-| `SUPABASE_DB_USER` | Database user |
-| `SUPABASE_DB_PASSWORD` | Database password |
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_KEY` | Supabase service role key |
-| `JWT_SECRET` | Secret for JWT signing |
-| `GROQ_API_KEY` | Groq API key |
-| `ALLOWED_ORIGINS` | Frontend URL (e.g. https://your-app.vercel.app) |
+| `SUPABASE_DB_URL` | URL JDBC de PostgreSQL |
+| `SUPABASE_DB_USER` | Usuario de la base de datos |
+| `SUPABASE_DB_PASSWORD` | Contraseña de la base de datos |
+| `SUPABASE_URL` | URL del proyecto Supabase |
+| `SUPABASE_KEY` | Service role key de Supabase |
+| `JWT_SECRET` | Clave secreta para firmar JWT |
+| `GROQ_API_KEY` | API key de Groq |
+| `ALLOWED_ORIGINS` | URL del frontend (ej: https://tu-app.vercel.app) |
 
-## Key Design Decisions
+## Decisiones técnicas destacadas
 
-**Defensive JSON parsing** — The AI occasionally returns text before or after the JSON. The parser always extracts by finding the first `{` and last `}` index, never assuming a clean response.
+**Parsing defensivo del JSON** — La IA a veces devuelve texto antes o después del JSON. El parser siempre extrae el contenido buscando el primer `{` y el último `}`, nunca asumiendo una respuesta limpia.
 
-**Asynchronous processing** — CV analysis is launched in a separate thread pool (`@Async`) so the upload endpoint returns immediately with a `202 Accepted` and the client polls for the result.
+**Procesamiento asíncrono** — El análisis del CV se lanza en un pool de hilos separado (`@Async`) para que el endpoint de upload devuelva inmediatamente un `202 Accepted` y el cliente haga polling del resultado.
 
-**Low temperature prompting** — Groq is called with `temperature: 0.2` to get consistent, structured JSON responses rather than creative text.
+**Temperatura baja en el prompt** — Se llama a Groq con `temperature: 0.2` para obtener respuestas JSON consistentes en lugar de texto creativo.
 
-**Free tier architecture** — The entire stack runs on free tiers: Render (backend), Vercel (frontend), Supabase (database + storage), Groq (AI inference).
+**Arquitectura 100% gratuita** — Todo el stack corre en free tiers: Render (backend), Vercel (frontend), Supabase (base de datos + storage), Groq (inferencia IA).
 
 ## Frontend
 
-The frontend repository is at: [cv-analyzer-frontend](https://github.com/Pau-Balsach/cv-analyzer-frontend)
-Built with Next.js 15 + Tailwind CSS, deployed on Vercel.
+El repositorio del frontend está en: [cv-analyzer-frontend](https://github.com/Pau-Balsach/cv-analyzer-frontend)
+Construido con Next.js 15 + Tailwind CSS, desplegado en Vercel.
 
-## License
+## Licencia
 
 MIT
