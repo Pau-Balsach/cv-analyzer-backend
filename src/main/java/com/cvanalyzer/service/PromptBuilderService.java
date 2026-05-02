@@ -39,4 +39,40 @@ public class PromptBuilderService {
                 [/INST]
                 """.formatted(truncatedText);
     }
+
+
+    public String buildJobMatchPrompt(String cvText, String jobDescription) {
+        String truncatedCv = cvText.length() > 2000
+                ? cvText.substring(0, 2000)
+                : cvText;
+
+        String truncatedJob = jobDescription.length() > 1000
+                ? jobDescription.substring(0, 1000)
+                : jobDescription;
+
+        return """
+            [INST]
+            You are a recruiting expert. Compare this CV against the job description and respond ONLY with a valid JSON object.
+            No explanations, no markdown formatting, no text before or after the JSON. Just the raw JSON.
+
+            CV TEXT:
+            ---
+            %s
+            ---
+
+            JOB DESCRIPTION:
+            ---
+            %s
+            ---
+
+            You MUST respond with this exact JSON structure and nothing else:
+            {
+              "matchScore": <integer between 0 and 100>,
+              "matchedSkills": ["<skill 1>", "<skill 2>"],
+              "missingSkills": ["<skill 1>", "<skill 2>"],
+              "recommendations": ["<actionable tip 1>", "<actionable tip 2>"]
+            }
+            [/INST]
+            """.formatted(truncatedCv, truncatedJob);
+    }
 }
