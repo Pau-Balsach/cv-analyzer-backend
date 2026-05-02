@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: ${SUPABASE_DB_URL}
+    username: ${SUPABASE_DB_USER}
+    password: ${SUPABASE_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+supabase:
+  url: ${SUPABASE_URL}
+  key: ${SUPABASE_KEY}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000
+
+allowed-origins: ${ALLOWED_ORIGINS}
+
+groq:
+  api-key: ${GROQ_API_KEY}
+  model-url: https://api.groq.com/openai/v1/chat/completions
+  model-name: llama-3.3-70b-versatile

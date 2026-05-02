@@ -38,7 +38,6 @@ target/
 
 # Variables de entorno
 application-dev.yml
-application-prod.yml
 
 # OS
 .DS_Store
