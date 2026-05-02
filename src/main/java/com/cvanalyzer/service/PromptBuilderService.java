@@ -7,10 +7,35 @@ public class PromptBuilderService {
 
     private static final int MAX_CV_CHARS = 3000;
 
+    /**
+     * Sanitiza el texto extraído del PDF antes de insertarlo en el prompt.
+     * Elimina caracteres de control, secuencias de inyección de prompt
+     * y reduce espacios/saltos excesivos.
+     */
+    private String sanitize(String text) {
+        if (text == null) return "";
+
+        return text
+                // Eliminar caracteres de control (excepto saltos de línea y tabulaciones normales)
+                .replaceAll("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]", "")
+                // Neutralizar intentos de inyección de prompt (cierre de bloque [/INST], ---, etc.)
+                .replace("[INST]", "")
+                .replace("[/INST]", "")
+                // Eliminar secuencias de más de 3 guiones seguidos (cierre del bloque ---)
+                .replaceAll("-{3,}", "--")
+                // Colapsar más de 3 saltos de línea consecutivos en 2
+                .replaceAll("(\r?\n){3,}", "\n\n")
+                // Colapsar espacios múltiples en uno
+                .replaceAll("[ \\t]{2,}", " ")
+                .trim();
+    }
+
     public String buildAnalysisPrompt(String cvText) {
-        String truncatedText = cvText.length() > MAX_CV_CHARS
-                ? cvText.substring(0, MAX_CV_CHARS)
-                : cvText;
+        String sanitized = sanitize(cvText);
+
+        String truncatedText = sanitized.length() > MAX_CV_CHARS
+                ? sanitized.substring(0, MAX_CV_CHARS)
+                : sanitized;
 
         return """
                 [INST]
@@ -40,15 +65,17 @@ public class PromptBuilderService {
                 """.formatted(truncatedText);
     }
 
-
     public String buildJobMatchPrompt(String cvText, String jobDescription) {
-        String truncatedCv = cvText.length() > 2000
-                ? cvText.substring(0, 2000)
-                : cvText;
+        String sanitizedCv = sanitize(cvText);
+        String sanitizedJob = sanitize(jobDescription);
 
-        String truncatedJob = jobDescription.length() > 1000
-                ? jobDescription.substring(0, 1000)
-                : jobDescription;
+        String truncatedCv = sanitizedCv.length() > 2000
+                ? sanitizedCv.substring(0, 2000)
+                : sanitizedCv;
+
+        String truncatedJob = sanitizedJob.length() > 1000
+                ? sanitizedJob.substring(0, 1000)
+                : sanitizedJob;
 
         return """
             [INST]
