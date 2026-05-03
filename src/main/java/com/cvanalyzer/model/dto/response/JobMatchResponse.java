@@ -16,6 +16,7 @@ import java.util.UUID;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class JobMatchResponse {
     private UUID jobMatchId;
+    private UUID analysisId;
     private Integer matchScore;
     private List<String> matchedSkills;
     private List<String> missingSkills;

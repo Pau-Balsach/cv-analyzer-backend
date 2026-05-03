@@ -72,7 +72,6 @@ public class JobMatchService {
 
     private JobMatchResponse callGroqAndPersist(UUID analysisId, JobMatchRequest request,
                                                 String jobDescriptionHash, String prompt) {
-        // 4. Llamar a Groq
         log.info("Enviando job match a Groq para analysisId: {}", analysisId);
 
         Map<String, Object> requestBody = Map.of(
@@ -96,7 +95,6 @@ public class JobMatchService {
 
             JobMatchResponse parsed = parseResponse(rawResponse);
 
-            // 4. Persistir el resultado en job_matches
             JobMatch jobMatch = JobMatch.builder()
                     .analysisId(analysisId)
                     .jobDescription(request.getJobDescription())
@@ -110,9 +108,9 @@ public class JobMatchService {
             JobMatch saved = jobMatchRepository.save(jobMatch);
             log.info("Job match guardado con id: {} para analysisId: {}", saved.getId(), analysisId);
 
-            // 5. Devolver respuesta enriquecida con el id persistido
             return JobMatchResponse.builder()
                     .jobMatchId(saved.getId())
+                    .analysisId(analysisId)              // ← AÑADIDO
                     .matchScore(parsed.getMatchScore())
                     .matchedSkills(parsed.getMatchedSkills())
                     .missingSkills(parsed.getMissingSkills())
@@ -134,7 +132,6 @@ public class JobMatchService {
                     .get("choices").get(0)
                     .get("message").get("content").asText();
 
-            // Extraer JSON defensivamente
             int start = generatedText.indexOf('{');
             int end = generatedText.lastIndexOf('}') + 1;
             String jsonStr = generatedText.substring(start, end);
@@ -150,6 +147,7 @@ public class JobMatchService {
     private static JobMatchResponse toJobMatchResponse(JobMatch m) {
         return JobMatchResponse.builder()
                 .jobMatchId(m.getId())
+                .analysisId(m.getAnalysisId())
                 .matchScore(m.getMatchScore())
                 .matchedSkills(m.getMatchedSkills())
                 .missingSkills(m.getMissingSkills())
