@@ -99,6 +99,7 @@ public class HistoryController {
     private static JobMatchResponse toJobMatchResponse(JobMatch m) {
         return JobMatchResponse.builder()
                 .jobMatchId(m.getId())
+                .analysisId(m.getAnalysisId())   
                 .matchScore(m.getMatchScore())
                 .matchedSkills(m.getMatchedSkills())
                 .missingSkills(m.getMissingSkills())
