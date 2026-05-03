@@ -5,16 +5,18 @@ import com.cvanalyzer.model.dto.request.JobMatchRequest;
 import com.cvanalyzer.model.dto.response.JobMatchResponse;
 import com.cvanalyzer.model.entity.Analysis;
 import com.cvanalyzer.model.entity.Cv;
+import com.cvanalyzer.model.entity.JobMatch;
 import com.cvanalyzer.repository.AnalysisRepository;
 import com.cvanalyzer.repository.CvRepository;
+import com.cvanalyzer.repository.JobMatchRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,8 @@ public class JobMatchService {
 
     private final AnalysisRepository analysisRepository;
     private final CvRepository cvRepository;
+    private final JobMatchRepository jobMatchRepository;
+    private final CvParsingService cvParsingService;
     private final PromptBuilderService promptBuilderService;
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -40,7 +44,7 @@ public class JobMatchService {
     @Value("${groq.model-name}")
     private String modelName;
 
-    public JobMatchResponse match(UUID analysisId, JobMatchRequest request, String language) {
+    public JobMatchResponse match(UUID analysisId, JobMatchRequest request, String language, UUID userId) {
         // 1. Obtener el análisis y el CV
         Analysis analysis = analysisRepository.findById(analysisId)
                 .orElseThrow(() -> new RuntimeException("Análisis no encontrado: " + analysisId));
@@ -55,7 +59,20 @@ public class JobMatchService {
                 language
         );
 
-        // 3. Llamar a Groq
+        // 3. Deduplicación: si ya existe un match para este análisis y esta oferta, devolverlo
+        String jobDescriptionHash = cvParsingService.calculateHash(request.getJobDescription());
+        return jobMatchRepository
+                .findByAnalysisIdAndJobDescriptionHash(analysisId, jobDescriptionHash)
+                .map(existing -> {
+                    log.info("Job match encontrado en caché para analysisId: {}", analysisId);
+                    return toJobMatchResponse(existing);
+                })
+                .orElseGet(() -> callGroqAndPersist(analysisId, request, jobDescriptionHash, prompt));
+    }
+
+    private JobMatchResponse callGroqAndPersist(UUID analysisId, JobMatchRequest request,
+                                                String jobDescriptionHash, String prompt) {
+        // 4. Llamar a Groq
         log.info("Enviando job match a Groq para analysisId: {}", analysisId);
 
         Map<String, Object> requestBody = Map.of(
@@ -77,8 +94,33 @@ public class JobMatchService {
                     .bodyToMono(String.class)
                     .block();
 
-            return parseResponse(rawResponse);
+            JobMatchResponse parsed = parseResponse(rawResponse);
 
+            // 4. Persistir el resultado en job_matches
+            JobMatch jobMatch = JobMatch.builder()
+                    .analysisId(analysisId)
+                    .jobDescription(request.getJobDescription())
+                    .jobDescriptionHash(jobDescriptionHash)
+                    .matchScore(parsed.getMatchScore())
+                    .matchedSkills(parsed.getMatchedSkills())
+                    .missingSkills(parsed.getMissingSkills())
+                    .recommendations(parsed.getRecommendations())
+                    .build();
+
+            JobMatch saved = jobMatchRepository.save(jobMatch);
+            log.info("Job match guardado con id: {} para analysisId: {}", saved.getId(), analysisId);
+
+            // 5. Devolver respuesta enriquecida con el id persistido
+            return JobMatchResponse.builder()
+                    .jobMatchId(saved.getId())
+                    .matchScore(parsed.getMatchScore())
+                    .matchedSkills(parsed.getMatchedSkills())
+                    .missingSkills(parsed.getMissingSkills())
+                    .recommendations(parsed.getRecommendations())
+                    .build();
+
+        } catch (AiServiceException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Error en job match: {}", e.getMessage());
             throw new AiServiceException("Error comunicándose con el servicio de IA: " + e.getMessage());
@@ -103,5 +145,15 @@ public class JobMatchService {
             log.error("Error parseando respuesta de job match: {}", e.getMessage());
             throw new AiServiceException("La IA devolvió una respuesta inválida en job match");
         }
+    }
+
+    private static JobMatchResponse toJobMatchResponse(JobMatch m) {
+        return JobMatchResponse.builder()
+                .jobMatchId(m.getId())
+                .matchScore(m.getMatchScore())
+                .matchedSkills(m.getMatchedSkills())
+                .missingSkills(m.getMissingSkills())
+                .recommendations(m.getRecommendations())
+                .build();
     }
 }
