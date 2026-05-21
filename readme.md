@@ -2,7 +2,7 @@
 
 API REST en Spring Boot que analiza CVs con IA y devuelve feedback estructurado y accionable.
 
-🔗 **Frontend:** [cv-analyzer-frontend](https://github.com/Pau-Balsach/cv-analyzer-frontend) · **Deploy:** Render (free tier)
+🔗 **Frontend:** [cv-analyzer-frontend](https://github.com/Pau-Balsach/cv-analyzer-frontend) · **API:** https://cv-analyzer-backend-g0hq.onrender.com · **Swagger:** https://cv-analyzer-backend-g0hq.onrender.com/swagger-ui/index.html · **Deploy:** Render (free tier)
 
 ---
 
@@ -47,12 +47,13 @@ Cliente hace polling GET /api/analysis/{id} cada 3s
 ## Endpoints principales
 
 ```
-POST /api/cv/upload              → Sube PDF, inicia análisis → 202 + analysisId
-GET  /api/analysis/{id}          → Consulta estado y resultado del análisis
+POST /api/cv/upload               → Sube PDF, inicia análisis → 202 + analysisId
+GET  /api/analysis/{id}           → Consulta estado y resultado del análisis
 POST /api/analysis/{id}/job-match → Compara CV contra una oferta de trabajo
-GET  /api/history                → Historial de análisis del usuario
-POST /api/compare                → Comparador entre dos versiones del CV
-GET  /api/cv/health              → Health check
+GET  /api/history                 → Historial de análisis del usuario
+POST /api/compare                 → Comparador entre dos versiones del CV
+GET  /api/cv/health               → Health check
+GET  /swagger-ui/index.html       → Documentación interactiva de la API
 ```
 
 Todos los endpoints requieren `Authorization: Bearer <token>` y `X-User-Id: <uuid>`.
